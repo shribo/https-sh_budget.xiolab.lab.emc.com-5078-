@@ -1,7 +1,3 @@
-# Excel files
-*.xlsx
-*.xls
-
 # Python cache
 __pycache__/
 *.py[cod]

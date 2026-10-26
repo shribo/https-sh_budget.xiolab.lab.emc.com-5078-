@@ -294,22 +294,15 @@
         let allData = [];
         let filteredData = [];
 
-        // Load data - check localStorage first, then fall back to JSON file
-        const storedData = localStorage.getItem('cioDashboardData');
-        if (storedData) {
-            allData = JSON.parse(storedData);
-            filteredData = allData;
-            initializeDashboard();
-        } else {
-            fetch('cio_dashboard_data.json')
-                .then(response => response.json())
-                .then(data => {
-                    allData = data;
-                    filteredData = data;
-                    initializeDashboard();
-                })
-                .catch(error => console.error('Error loading data:', error));
-        }
+        // Load data from JSON file (single source of truth for team)
+        fetch('cio_dashboard_data.json')
+            .then(response => response.json())
+            .then(data => {
+                allData = data;
+                filteredData = data;
+                initializeDashboard();
+            })
+            .catch(error => console.error('Error loading data:', error));
 
         function parseBudget(value) {
             if (value === '—' || value === null || value === undefined) return 0;
@@ -349,11 +342,8 @@
                 allData = jsonData;
                 filteredData = jsonData;
 
-                // Save to localStorage for persistence
-                localStorage.setItem('cioDashboardData', JSON.stringify(jsonData));
-
                 initializeDashboard();
-                alert('Data uploaded successfully! Dashboard has been updated.');
+                alert('Data uploaded successfully! This is a temporary view. To update for the team, use the update_dashboard.bat script.');
             };
             reader.readAsArrayBuffer(file);
         }
