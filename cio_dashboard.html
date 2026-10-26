@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ISG CIO Software Approvals Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -32,21 +32,52 @@
         }
 
         .header {
-            text-align: center;
-            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 3px solid #1e3c72;
         }
 
         .header h1 {
             color: #333;
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-size: 2em;
+            margin-bottom: 5px;
         }
 
         .header p {
             color: #666;
-            font-size: 1.1em;
+            font-size: 0.9em;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: transform 0.2s;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-toggle {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
         }
 
         .summary-cards {
@@ -54,68 +85,6 @@
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-bottom: 40px;
-        }
-
-        .card {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            transition: transform 0.3s;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-        }
-
-        .card h3 {
-            font-size: 1em;
-            margin-bottom: 10px;
-            opacity: 0.9;
-        }
-
-        .card .number {
-            font-size: 2.5em;
-            font-weight: bold;
-        }
-
-        .card.fy27 {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        }
-
-        .card.fy28 {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .card.new {
-            background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
-        }
-
-        .card.renewal {
-            background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
-        }
-
-        .charts-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-
-        .chart-container {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-        }
-
-        .chart-container h3 {
-            color: #333;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 1.3em;
         }
 
         .table-section {
@@ -254,93 +223,37 @@
             color: #666;
         }
 
-        .insights-section {
-            background: #e7f3ff;
-            padding: 25px;
-            border-radius: 10px;
-            margin-bottom: 40px;
-            border: 2px solid #1e3c72;
+        .status-bar {
+            background: #f8f9fa;
+            padding: 10px 20px;
+            border-top: 2px solid #1e3c72;
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85em;
+            color: #666;
         }
 
-        .insights-section h3 {
-            color: #1e3c72;
-            margin-bottom: 20px;
-            font-size: 1.5em;
-        }
-
-        .insight-item {
-            background: white;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #1e3c72;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .insight-item h4 {
-            color: #1e3c72;
-            margin-bottom: 8px;
-        }
-
-        .insight-item p {
-            color: #555;
-            line-height: 1.6;
+        .status-bar .status {
+            color: #11998e;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>ISG CIO Software Approvals Dashboard</h1>
-            <p>Software Budget Approvals by Fiscal Year</p>
-            <p style="margin-top: 10px; font-size: 0.9em;">Data as of October 2026</p>
-        </div>
-
-        <div class="summary-cards">
-            <div class="card">
-                <h3>Total Software</h3>
-                <div class="number" id="total-software">0</div>
+            <div>
+                <h1>ISG CIO Software Approvals Dashboard</h1>
+                <p>Software Budget Approvals by Fiscal Year</p>
+                <p style="margin-top: 5px; font-size: 0.85em; color: #999;">Data as of October 2026</p>
             </div>
-            <div class="card fy27">
-                <h3>FY27 Budget</h3>
-                <div class="number" id="fy27-budget">$0</div>
+            <div class="header-actions">
+                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;" onchange="handleFileUpload(event)">
+                <button class="btn btn-toggle" onclick="document.getElementById('fileInput').click()">Upload New Data</button>
+                <button class="btn btn-export" onclick="exportToExcel()">Export Excel</button>
             </div>
-            <div class="card fy28">
-                <h3>FY28 Budget</h3>
-                <div class="number" id="fy28-budget">$0</div>
-            </div>
-            <div class="card new">
-                <h3>New Software</h3>
-                <div class="number" id="new-count">0</div>
-            </div>
-            <div class="card renewal">
-                <h3>Renewals</h3>
-                <div class="number" id="renewal-count">0</div>
-            </div>
-        </div>
-
-        <div class="charts-section">
-            <div class="chart-container">
-                <h3>Budget Trend by Fiscal Year</h3>
-                <canvas id="budgetTrendChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <h3>New vs Renewal Distribution</h3>
-                <canvas id="typeDistributionChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <h3>Top 10 Software by FY27 Budget</h3>
-                <canvas id="topSoftwareChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <h3>Budget Distribution by FY</h3>
-                <canvas id="budgetDistributionChart"></canvas>
-            </div>
-        </div>
-
-        <div class="insights-section">
-            <h3>Key Insights</h3>
-            <div id="insights-container"></div>
         </div>
 
         <div class="table-section">
@@ -366,6 +279,12 @@
             </table>
         </div>
 
+        <div class="status-bar">
+            <span><span class="status">●</span> All changes saved</span>
+            <span id="record-count">0 records</span>
+            <span>Last updated: October 26, 2026</span>
+        </div>
+
         <div class="footer">
             <p>ISG CIO Software Approvals Dashboard | Generated on October 26, 2026</p>
         </div>
@@ -375,15 +294,22 @@
         let allData = [];
         let filteredData = [];
 
-        // Load data
-        fetch('cio_dashboard_data.json')
-            .then(response => response.json())
-            .then(data => {
-                allData = data;
-                filteredData = data;
-                initializeDashboard();
-            })
-            .catch(error => console.error('Error loading data:', error));
+        // Load data - check localStorage first, then fall back to JSON file
+        const storedData = localStorage.getItem('cioDashboardData');
+        if (storedData) {
+            allData = JSON.parse(storedData);
+            filteredData = allData;
+            initializeDashboard();
+        } else {
+            fetch('cio_dashboard_data.json')
+                .then(response => response.json())
+                .then(data => {
+                    allData = data;
+                    filteredData = data;
+                    initializeDashboard();
+                })
+                .catch(error => console.error('Error loading data:', error));
+        }
 
         function parseBudget(value) {
             if (value === '—' || value === null || value === undefined) return 0;
@@ -399,156 +325,37 @@
         }
 
         function initializeDashboard() {
-            updateSummaryCards();
-            createCharts();
             populateTable();
-            generateInsights();
+            document.getElementById('record-count').textContent = filteredData.length + ' records';
         }
 
-        function updateSummaryCards() {
-            document.getElementById('total-software').textContent = filteredData.length;
-
-            const fy27Total = filteredData.reduce((sum, row) => sum + parseBudget(row['FY27 Approved']), 0);
-            const fy28Total = filteredData.reduce((sum, row) => sum + parseBudget(row['FY28 Approved']), 0);
-
-            document.getElementById('fy27-budget').textContent = formatCurrency(fy27Total);
-            document.getElementById('fy28-budget').textContent = formatCurrency(fy28Total);
-
-            const newCount = filteredData.filter(d => d['New / Renewal'] === 'New').length;
-            const renewalCount = filteredData.filter(d => d['New / Renewal'] === 'Renew' || d['New / Renewal'] === 'Renewal').length;
-
-            document.getElementById('new-count').textContent = newCount;
-            document.getElementById('renewal-count').textContent = renewalCount;
+        function exportToExcel() {
+            const table = document.getElementById('approvals-table');
+            const wb = XLSX.utils.table_to_book(table, { sheet: 'Software Approvals' });
+            XLSX.writeFile(wb, 'ISG_CIO_Software_Approvals.xlsx');
         }
 
-        function createCharts() {
-            // Budget Trend Chart
-            const fy26Total = filteredData.reduce((sum, row) => sum + parseBudget(row['FY26 Approved']), 0);
-            const fy27Total = filteredData.reduce((sum, row) => sum + parseBudget(row['FY27 Approved']), 0);
-            const fy28Total = filteredData.reduce((sum, row) => sum + parseBudget(row['FY28 Approved']), 0);
-            const fy29Total = filteredData.reduce((sum, row) => sum + parseBudget(row['FY29 Approved']), 0);
-            const fy30Total = filteredData.reduce((sum, row) => sum + parseBudget(row['FY30 Approved']), 0);
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-            new Chart(document.getElementById('budgetTrendChart'), {
-                type: 'line',
-                data: {
-                    labels: ['FY26', 'FY27', 'FY28', 'FY29', 'FY30'],
-                    datasets: [{
-                        label: 'Budget ($)',
-                        data: [fy26Total, fy27Total, fy28Total, fy29Total, fy30Total],
-                        borderColor: '#1e3c72',
-                        backgroundColor: 'rgba(30, 60, 114, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + (value / 1000000).toFixed(1) + 'M';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
-            // Type Distribution Chart
-            const typeCounts = {};
-            filteredData.forEach(d => {
-                const type = d['New / Renewal'] || 'Not Specified';
-                typeCounts[type] = (typeCounts[type] || 0) + 1;
-            });
+                allData = jsonData;
+                filteredData = jsonData;
 
-            new Chart(document.getElementById('typeDistributionChart'), {
-                type: 'pie',
-                data: {
-                    labels: Object.keys(typeCounts),
-                    datasets: [{
-                        data: Object.values(typeCounts),
-                        backgroundColor: ['#fc4a1a', '#00b09b', '#6c757d', '#f7b733', '#96c93d'],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
+                // Save to localStorage for persistence
+                localStorage.setItem('cioDashboardData', JSON.stringify(jsonData));
 
-            // Top Software Chart
-            const softwareBudgets = filteredData.map(d => ({
-                name: d['Software Name'],
-                budget: parseBudget(d['FY27 Approved'])
-            })).filter(d => d.budget > 0)
-              .sort((a, b) => b.budget - a.budget)
-              .slice(0, 10);
-
-            new Chart(document.getElementById('topSoftwareChart'), {
-                type: 'bar',
-                data: {
-                    labels: softwareBudgets.map(s => s.name.length > 20 ? s.name.substring(0, 20) + '...' : s.name),
-                    datasets: [{
-                        label: 'FY27 Budget ($)',
-                        data: softwareBudgets.map(s => s.budget),
-                        backgroundColor: '#1e3c72',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    indexAxis: 'y',
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + (value / 1000).toFixed(0) + 'K';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Budget Distribution Chart
-            new Chart(document.getElementById('budgetDistributionChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['FY26', 'FY27', 'FY28', 'FY29', 'FY30'],
-                    datasets: [{
-                        data: [fy26Total, fy27Total, fy28Total, fy29Total, fy30Total],
-                        backgroundColor: ['#1e3c72', '#11998e', '#f093fb', '#f7b733', '#96c93d'],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
+                initializeDashboard();
+                alert('Data uploaded successfully! Dashboard has been updated.');
+            };
+            reader.readAsArrayBuffer(file);
         }
 
         function populateTable() {
@@ -586,59 +393,6 @@
                 columnDefs: [
                     { orderable: true, targets: [0, 1, 2, 3, 4, 5, 6, 7] }
                 ]
-            });
-        }
-
-        function generateInsights() {
-            const insights = [];
-
-            const fy27Total = filteredData.reduce((sum, row) => sum + parseBudget(row['FY27 Approved']), 0);
-            const fy28Total = filteredData.reduce((sum, row) => sum + parseBudget(row['FY28 Approved']), 0);
-            const fy29Total = filteredData.reduce((sum, row) => sum + parseBudget(row['FY29 Approved']), 0);
-
-            const growthRate = ((fy28Total - fy27Total) / fy27Total * 100).toFixed(1);
-            insights.push({
-                title: `FY27-FY28 Budget Change: ${growthRate}%`,
-                text: `FY27 budget is ${formatCurrency(fy27Total)} and FY28 is ${formatCurrency(fy28Total)}. ${growthRate > 0 ? 'Budget increased' : 'Budget decreased'} from FY27 to FY28.`
-            });
-
-            const newCount = filteredData.filter(d => d['New / Renewal'] === 'New').length;
-            const renewalCount = filteredData.filter(d => d['New / Renewal'] === 'Renew' || d['New / Renewal'] === 'Renewal').length;
-            insights.push({
-                title: 'New vs Renewal Software',
-                text: `Out of ${filteredData.length} software approvals, ${newCount} are new software and ${renewalCount} are renewals. This indicates ${((renewalCount / filteredData.length) * 100).toFixed(1)}% of the portfolio is being renewed.`
-            });
-
-            const topSoftware = filteredData.map(d => ({
-                name: d['Software Name'],
-                budget: parseBudget(d['FY27 Approved'])
-            })).filter(d => d.budget > 0)
-              .sort((a, b) => b.budget - a.budget)[0];
-
-            if (topSoftware) {
-                insights.push({
-                    title: 'Highest Budget Software',
-                    text: `${topSoftware.name} has the highest FY27 budget at ${formatCurrency(topSoftware.budget)}.`
-                });
-            }
-
-            const futureCommitment = fy29Total + parseBudget(filteredData.reduce((sum, row) => sum + parseBudget(row['FY30 Approved']), 0));
-            insights.push({
-                title: 'Multi-Year Commitment',
-                text: `Total budget commitment for FY29-FY30 is ${formatCurrency(futureCommitment)}, showing strong multi-year planning.`
-            });
-
-            // Display insights
-            const container = document.getElementById('insights-container');
-            container.innerHTML = '';
-            insights.forEach(insight => {
-                const div = document.createElement('div');
-                div.className = 'insight-item';
-                div.innerHTML = `
-                    <h4>${insight.title}</h4>
-                    <p>${insight.text}</p>
-                `;
-                container.appendChild(div);
             });
         }
     </script>
